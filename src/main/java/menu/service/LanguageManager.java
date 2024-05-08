@@ -67,7 +67,7 @@ public class LanguageManager {
         final Map<String, DiscordLocale> locales = new HashMap<>();
         for (String lang : languages.keySet()) {
             for (DiscordLocale locale : DiscordLocale.values()) {
-                if (locale.toString().startsWith(lang)) {
+                if (locale.getLocale().startsWith(lang)) {
                     locales.put(lang, locale);
                 }
             }
