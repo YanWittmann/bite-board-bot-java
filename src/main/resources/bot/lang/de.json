@@ -4,7 +4,7 @@
       "errorExecutingCommand": "Es gab ein Fehler beim Ausführen deines Befehls. Prüfe noch einmal deine Eingaben oder versuche es noch einmal."
     },
     "menu": {
-      "baseDescription": "Fragt das Menü für einen bestimmten Tag ab.",
+      "description": "Fragt das Menü für einen bestimmten Tag ab.",
       "options": {
         "today": {
           "name": "heute",

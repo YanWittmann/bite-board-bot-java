@@ -1,5 +1,6 @@
 package menu.service;
 
+import lombok.extern.log4j.Log4j2;
 import net.dv8tion.jda.api.interactions.DiscordLocale;
 import org.json.JSONObject;
 
@@ -10,6 +11,7 @@ import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
 
+@Log4j2
 public class LanguageManager {
 
     private static LanguageManager instance;
@@ -17,6 +19,11 @@ public class LanguageManager {
     public static LanguageManager get() {
         if (instance == null) {
             instance = new LanguageManager();
+            try {
+                instance.setupLanguages();
+            } catch (IOException e) {
+                throw new RuntimeException("Error setting up languages: " + e.getMessage());
+            }
         }
         return instance;
     }
@@ -26,7 +33,12 @@ public class LanguageManager {
     private String currentLanguage = "en";
 
     public void setupLanguages() throws IOException {
-        String[] files = getResourceListing(getClass(), LANG_DIR);
+        final String[] files = getResourceListing(getClass(), LANG_DIR);
+
+        if (files.length == 0) {
+            throw new RuntimeException("No language files found in [" + LANG_DIR + "]");
+        }
+
         for (String file : files) {
             if (file.endsWith(".json")) {
                 String lang = file.replace(".json", "");
@@ -64,22 +76,27 @@ public class LanguageManager {
     }
 
     public String getTranslation(String key) {
-        return getTranslation(currentLanguage, key);
+        return getTranslation(key, currentLanguage);
     }
 
-    public String getTranslation(String lang, String key) {
+    public String getTranslation(String key, String lang) {
         String[] keys = key.split("\\.");
         Object translation = languages.get(lang);
 
         for (String k : keys) {
             if (translation instanceof JSONObject) {
-                translation = ((JSONObject) translation).get(k);
+                translation = ((JSONObject) translation).opt(k);
             } else {
                 return key;
             }
         }
 
-        return translation != null ? translation.toString() : key;
+        if (translation != null) {
+            return translation.toString();
+        }
+
+        log.warn("Translation not found for key [{}] in lang [{}]", key, lang);
+        return key;
     }
 
     public String fillTranslation(String key, String... args) {

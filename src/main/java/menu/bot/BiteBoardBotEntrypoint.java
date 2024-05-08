@@ -7,9 +7,7 @@ import menu.providers.implementations.HochschuleMannheimTagessichtMenuProvider;
 import menu.service.ImageSearcher;
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.JDABuilder;
-import net.dv8tion.jda.api.requests.GatewayIntent;
 import net.dv8tion.jda.api.utils.ChunkingFilter;
-import net.dv8tion.jda.api.utils.MemberCachePolicy;
 
 import java.io.File;
 import java.io.IOException;
@@ -34,8 +32,6 @@ public class BiteBoardBotEntrypoint {
         final MenuCommand menuCommand = new MenuCommand(menuProviders, imageSearch, botData);
         final JDA jda = JDABuilder.createDefault(botToken)
                 .setChunkingFilter(ChunkingFilter.ALL)
-                .setMemberCachePolicy(MemberCachePolicy.ALL)
-                .enableIntents(GatewayIntent.GUILD_MEMBERS)
                 .addEventListeners(menuCommand)
                 .build();
 

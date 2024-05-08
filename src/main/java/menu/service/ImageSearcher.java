@@ -4,6 +4,7 @@ import lombok.extern.log4j.Log4j2;
 import menu.bot.BiteBoardProperties;
 import org.json.JSONArray;
 import org.json.JSONObject;
+import org.jsoup.nodes.Document;
 
 import java.io.IOException;
 import java.net.URLEncoder;
@@ -11,8 +12,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Properties;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 @Log4j2
 public class ImageSearcher {
@@ -34,16 +33,12 @@ public class ImageSearcher {
             final String url = "https://www.google.com/search?tbm=isch&q=" + encodedQuery;
 
             try {
-                final String html = SiteFetcher.performGetAndParseHtml(url).toString();
+                final Document html = SiteFetcher.performGetAndParseHtml(url);
 
-                final List<String> imgUrls = new ArrayList<>();
-                final Pattern imgRegex = Pattern.compile("<img[^>]+src=\"?([^\"\\s]+)\"?\\s*/>");
-                final Matcher matcher = imgRegex.matcher(html);
-                while (matcher.find()) {
-                    imgUrls.add(matcher.group(1));
-                }
-
-                return imgUrls;
+                return html.getElementsByTag("img").stream()
+                        .map(element -> element.attr("src"))
+                        .filter(src -> src.startsWith("https://") || src.startsWith("http://"))
+                        .collect(ArrayList::new, ArrayList::add, ArrayList::addAll);
             } catch (IOException e) {
                 log.error("Error fetching images from Google: {}", e.getMessage());
                 return new ArrayList<>();
@@ -87,7 +82,7 @@ public class ImageSearcher {
 
         @Override
         public ImageDisplayMode preferredImageDisplayMode() {
-            return ImageDisplayMode.SEPARATE;
+            return ImageDisplayMode.COMBINED;
         }
     }
 

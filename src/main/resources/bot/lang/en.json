@@ -4,7 +4,7 @@
       "errorExecutingCommand": "There was am error executing your command. Please check your input or try again."
     },
     "menu": {
-      "baseDescription": "Fetches the menu for a specific day.",
+      "description": "Fetches the menu for a specific day.",
       "options": {
         "today": {
           "name": "today",
