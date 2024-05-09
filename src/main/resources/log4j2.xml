@@ -4,14 +4,19 @@
         <Property name="basePath">logs</Property>
     </Properties>
     <Appenders>
-        <!-- Console Appender -->
         <Console name="STDOUT" target="SYSTEM_OUT">
-            <PatternLayout pattern="[%p] [%d{yyyy-MM-dd HH:mm:ss}] %m%n"/>
+            <PatternLayout pattern="[%p] [%d{yyyy-MM-dd HH:mm:ss} %-26.26c{1.}] %m%n"/>
+        </Console>
+
+        <Console name="JDA_CONSOLE" target="SYSTEM_OUT">
+            <PatternLayout pattern="[%p] [%d{yyyy-MM-dd HH:mm:ss} %-26.26c{1.}] [JDA] %m%n"/>
         </Console>
     </Appenders>
     <Loggers>
-        <Logger name="menu.bot" level="info"/>
-        <Logger name="menu.service" level="info"/>
+        <Logger name="menu" level="info"/>
+        <Logger name="net.dv8tion.jda" level="info" additivity="false">
+            <AppenderRef ref="JDA_CONSOLE"/>
+        </Logger>
         <Root level="info">
             <AppenderRef ref="STDOUT"/>
         </Root>

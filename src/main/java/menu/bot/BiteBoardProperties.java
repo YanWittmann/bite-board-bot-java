@@ -1,7 +1,9 @@
 package menu.bot;
 
 import lombok.extern.log4j.Log4j2;
+import menu.service.ApplicationStateLogger;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Properties;
@@ -24,21 +26,43 @@ public class BiteBoardProperties {
 
     public static Properties getProperties() {
         if (properties == null) {
-            loadProperties();
+            try {
+                loadProperties();
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
         }
         return properties;
     }
 
-    private static synchronized void loadProperties() {
+    private static synchronized void loadProperties() throws IOException {
         properties = new Properties();
+
+        ApplicationStateLogger.logApplicationStartupStepMessage("Loading bot properties");
+
+        final String configuredExternalConfigPath = System.getenv("BITE_BOARD_CONFIG_PATH");
+        if (configuredExternalConfigPath != null) {
+            ApplicationStateLogger.logApplicationStartupStepMessageFollowup("Loading external configuration from: " + configuredExternalConfigPath);
+            final File externalConfigFile = new File(configuredExternalConfigPath);
+            if (externalConfigFile.exists()) {
+                try (final InputStream inputStream = externalConfigFile.toURI().toURL().openStream()) {
+                    properties.load(inputStream);
+                }
+                ApplicationStateLogger.logApplicationStartupStepMessageFollowup("Loaded " + properties.size() + " properties from external configuration");
+                return;
+            } else {
+                throw new RuntimeException("Configured external configuration file does not exist: " + configuredExternalConfigPath);
+            }
+        }
+
+        ApplicationStateLogger.logApplicationStartupStepMessageFollowup("Loading internal configuration from: " + CONFIG_FILE_PATH);
         try (final InputStream inputStream = BiteBoardProperties.class.getResourceAsStream(CONFIG_FILE_PATH)) {
             if (inputStream != null) {
                 properties.load(inputStream);
+                ApplicationStateLogger.logApplicationStartupStepMessageFollowup("Loaded " + properties.size() + " properties from internal configuration");
             } else {
-                log.error("Unable to load configuration file: {}", CONFIG_FILE_PATH);
+                throw new RuntimeException("Unable to load configuration file: " + CONFIG_FILE_PATH);
             }
-        } catch (IOException e) {
-            log.error("Error loading configuration file: {}", e.getMessage());
         }
     }
 }

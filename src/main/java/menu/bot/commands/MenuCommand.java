@@ -5,10 +5,7 @@ import lombok.extern.log4j.Log4j2;
 import menu.bot.BotData;
 import menu.providers.MenuItem;
 import menu.providers.*;
-import menu.service.ImageSearcher;
-import menu.service.ImageUtils;
-import menu.service.LanguageManager;
-import menu.service.TimeUtils;
+import menu.service.*;
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.entities.MessageEmbed;
@@ -51,7 +48,7 @@ public class MenuCommand extends ListenerAdapter {
     }
 
     public CommandData getCommandData() {
-        log.info("Creating command data for menu command");
+        ApplicationStateLogger.logApplicationStartupStepMessageFollowup("Creating command data for menu command");
         final CommandDataImpl commandData = new CommandDataImpl("menu", LanguageManager.get().getTranslation("command.menu.description"));
 
         for (String subcommand : MENU_FETCH_SUBCOMMANDS) {
@@ -128,38 +125,50 @@ public class MenuCommand extends ListenerAdapter {
 
     @Override
     public void onSlashCommandInteraction(SlashCommandInteractionEvent event) {
-        if (!event.getName().equals("menu")) return;
-
-        event.deferReply().queue();
-
-        final String user = event.getUser().getName();
-        final String subcommandName = event.getSubcommandName();
-
-        if (subcommandName == null) {
-            event.getHook().sendMessage(LanguageManager.get().getTranslation("command.settingsmenu.response.unknownSubcommand.description")).queue();
+        if (!event.getName().equals("menu")) {
+            event.getHook().sendMessage(LanguageManager.get().getTranslation("command.generic.invalidCommandName")).queue();
             return;
         }
 
-        if (MENU_FETCH_SUBCOMMANDS.contains(subcommandName)) {
-            fetchMenuSubcommandExecution(event, user, subcommandName);
-        } else {
-            switch (subcommandName) {
-                case "provider":
-                    setMenuProviderSubcommandExecution(event, user);
-                    break;
-                case "listproviders":
-                    listMenuProvidersSubcommandExecution(event);
-                    break;
-                case "schedule":
-                    scheduleMenuSubcommandExecution(event, user);
-                    break;
-                case "time":
-                    echoUtcTimeSubcommandExecution(event);
-                    break;
-                default:
-                    event.getHook().sendMessage(LanguageManager.get().getTranslation("command.settingsmenu.response.unknownSubcommand.description")).queue();
-                    break;
+        event.deferReply().queue();
+
+        try {
+            final String user = event.getUser().getName();
+            final String subcommandName = event.getSubcommandName();
+            log.info("Received [{}] command from user [{}] in [{}/{}/{}] with subcommand [{}] and options {}",
+                    event.getName(), user,
+                    event.getGuild() == null ? "null" : event.getGuild().getName(), event.getChannel().getName(), event.getChannel().getId(),
+                    subcommandName, event.getOptions());
+
+            if (subcommandName == null) {
+                event.getHook().sendMessage(LanguageManager.get().getTranslation("command.settingsmenu.response.unknownSubcommand.description")).queue();
+                return;
             }
+
+            if (MENU_FETCH_SUBCOMMANDS.contains(subcommandName)) {
+                fetchMenuSubcommandExecution(event, user, subcommandName);
+            } else {
+                switch (subcommandName) {
+                    case "provider":
+                        setMenuProviderSubcommandExecution(event, user);
+                        break;
+                    case "listproviders":
+                        listMenuProvidersSubcommandExecution(event);
+                        break;
+                    case "schedule":
+                        scheduleMenuSubcommandExecution(event, user);
+                        break;
+                    case "time":
+                        echoUtcTimeSubcommandExecution(event);
+                        break;
+                    default:
+                        event.getHook().sendMessage(LanguageManager.get().getTranslation("command.settingsmenu.response.unknownSubcommand.description")).queue();
+                        break;
+                }
+            }
+        } catch (Exception e) {
+            log.error("Error processing menu command", e);
+            event.getHook().sendMessage(LanguageManager.get().getTranslation("command.generic.errorExecutingCommand")).queue();
         }
     }
 
@@ -254,6 +263,12 @@ public class MenuCommand extends ListenerAdapter {
         } catch (ExecutionException | InterruptedException e) {
             log.error("Error fetching menu for user [{}] using provider [{}] with subcommand [{}]", user, menuProvider.getName(), subcommandName, e);
             event.getHook().sendMessage(LanguageManager.get().getTranslation("command.menu.response.error")).queue();
+            return;
+        }
+
+        if (menuEmbedResult.getMenuItems().isEmpty()) {
+            event.getHook().sendMessage(LanguageManager.get().fillTranslation("command.settingsmenu.response.periodicMenu.noMenuForToday", menuProvider.toMdString(), TimeUtils.formatDay(menuCommandData.getTargetDate()))).queue();
+            log.info("No menu found for user [{}] using provider [{}] with subcommand [{}]", user, menuProvider.getName(), subcommandName);
             return;
         }
 
@@ -418,7 +433,7 @@ public class MenuCommand extends ListenerAdapter {
                 ImageIO.write(combinedImage, "png", file);
 
                 final MessageEmbed imageEmbed = new EmbedBuilder()
-                        .setTitle("Preview")
+                        .setTitle(LanguageManager.get().getTranslation("command.menu.response.image.combined.title"))
                         .setColor(Color.decode("#0099ff"))
                         .setTimestamp(new Date().toInstant())
                         .setImage("attachment://" + file.getName())

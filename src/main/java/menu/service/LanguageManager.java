@@ -34,6 +34,7 @@ public class LanguageManager {
     private String currentLanguage = "en";
 
     public void setupLanguages() throws IOException {
+        ApplicationStateLogger.logApplicationStartupStepMessage("Setting up languages");
         final List<String> files = new ArrayList<>(Arrays.asList(getResourceListing(getClass(), LANG_DIR)));
 
         for (String lang : SUPPORTED_LANGUAGES) {
@@ -43,6 +44,7 @@ public class LanguageManager {
             }
         }
 
+        ApplicationStateLogger.logApplicationStartupStepMessageFollowup("Loading languages from: " + String.join(", ", files));
         for (String file : files) {
             if (file.endsWith(".json")) {
                 String lang = file.replace(".json", "");
@@ -54,6 +56,8 @@ public class LanguageManager {
         if (languages.isEmpty()) {
             throw new RuntimeException("No languages found in lang directory");
         }
+
+        ApplicationStateLogger.logApplicationStartupStepMessageFollowup("Languages loaded: " + String.join(", ", languages.keySet()));
     }
 
     public void setLang(String lang) {

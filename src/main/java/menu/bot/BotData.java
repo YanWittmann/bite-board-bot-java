@@ -1,6 +1,7 @@
 package menu.bot;
 
 import lombok.Data;
+import lombok.Getter;
 import lombok.extern.log4j.Log4j2;
 import menu.providers.MenuItemsProvider;
 import menu.providers.MenuItemsProviderManager;
@@ -15,6 +16,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 @Log4j2
+@Getter
 public class BotData {
     private final File file;
 

@@ -13,7 +13,6 @@ public class MenuItemsProviderManager {
     private final Map<String, MenuItemsProvider> providers = new HashMap<>();
 
     public void register(MenuItemsProvider provider) {
-        log.info("Registering provider: {} as {} ({})", provider.getName(), provider.getClass().getSimpleName(), provider.getDisplayMenuLink());
         providers.put(provider.getName(), provider);
     }
 

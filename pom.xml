@@ -27,6 +27,11 @@
             <artifactId>log4j-core</artifactId>
             <version>2.19.0</version>
         </dependency>
+        <dependency>
+            <groupId>org.apache.logging.log4j</groupId>
+            <artifactId>log4j-slf4j-impl</artifactId>
+            <version>2.19.0</version>
+        </dependency>
 
         <dependency>
             <groupId>org.json</groupId>
@@ -66,6 +71,25 @@
 
     <build>
         <finalName>bite-board-bot</finalName>
+
+        <resources>
+            <resource>
+                <directory>src/main/resources</directory>
+                <includes>
+                    <include>build.properties</include>
+                </includes>
+                <filtering>true</filtering>
+            </resource>
+
+            <resource>
+                <directory>src/main/resources</directory>
+                <excludes>
+                    <exclude>build.properties</exclude>
+                </excludes>
+                <filtering>false</filtering>
+            </resource>
+        </resources>
+
         <plugins>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>

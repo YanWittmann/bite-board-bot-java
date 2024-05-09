@@ -6,6 +6,7 @@ import menu.providers.MenuItem;
 import menu.providers.MenuItemsProvider;
 import menu.providers.MenuItemsProviderManager;
 import menu.providers.MenuTime;
+import menu.service.ApplicationStateLogger;
 import menu.service.ImageSearcher;
 import menu.service.LanguageManager;
 import menu.service.TimeUtils;
@@ -32,18 +33,31 @@ public class BiteBoardBot {
     private final JDA jda;
 
     public BiteBoardBot(List<MenuItemsProvider> providers) throws InterruptedException {
+        ApplicationStateLogger.logStartupStart();
+        LanguageManager.get();
+        ApplicationStateLogger.logStartupSelectLanguage(BiteBoardProperties.getProperties().getProperty(BiteBoardProperties.LANGUAGE));
         LanguageManager.get().setLang(BiteBoardProperties.getProperties().getProperty(BiteBoardProperties.LANGUAGE));
 
-        providers.forEach(menuProviders::register);
+        ApplicationStateLogger.logStartupSetupMenuProviders(providers);
+        for (MenuItemsProvider provider : providers) {
+            menuProviders.register(provider);
+            ApplicationStateLogger.logApplicationStartupStepMessageFollowup(provider.getName() + " as " + provider.getClass().getSimpleName() + " (" + provider.getDisplayMenuLink() + ")");
+        }
 
+        ApplicationStateLogger.logStartupSetupImageSearch(BiteBoardProperties.getProperties().getProperty(BiteBoardProperties.MENSA_MENU_IMAGE_PREVIEW_SERVICE));
         this.imageSearch = ImageSearcher.createImageSearch(BiteBoardProperties.getProperties());
+
+        ApplicationStateLogger.logStartupSetupBotData(BiteBoardProperties.getProperties().getProperty(BiteBoardProperties.DATA_STORAGE_PATH));
         try {
             this.botData = new BotData(new File(BiteBoardProperties.getProperties().getProperty(BiteBoardProperties.DATA_STORAGE_PATH)));
+            ApplicationStateLogger.logStartupSetupBotDataFinished(this.botData);
         } catch (Exception e) {
             throw new RuntimeException("Error parsing bot data from file: " + e.getMessage());
         }
+
         this.menuCommand = new MenuCommand(menuProviders, imageSearch, botData);
 
+        ApplicationStateLogger.logStartupSetupDiscordBot();
         this.jda = JDABuilder.createDefault(BiteBoardProperties.getProperties().getProperty(BiteBoardProperties.DISCORD_BOT_TOKEN))
                 .setChunkingFilter(ChunkingFilter.ALL)
                 .addEventListeners(menuCommand)
@@ -53,6 +67,7 @@ public class BiteBoardBot {
                 .updateCommands().addCommands(menuCommand.getCommandData())
                 .queue();
 
+        ApplicationStateLogger.logStartupSetupScheduleRegularMenuPosting();
         final Timer timer = new Timer();
         timer.schedule(new TimerTask() {
             @Override
@@ -64,6 +79,8 @@ public class BiteBoardBot {
                 }
             }
         }, 0, PERIODIC_MENU_CHECK_TIME_INTERVAL);
+
+        ApplicationStateLogger.logStartupPhaseComplete();
     }
 
     private void checkForPeriodicMenuPosting() throws ExecutionException, InterruptedException {
@@ -73,7 +90,7 @@ public class BiteBoardBot {
             final String channelId = channelData.getChannelId();
             final String time = channelData.getTime();
 
-            // Check if the scheduled time has passed within the check interval
+            // check if the scheduled time has passed within the check interval
             if (!checkUTCTime(time, BiteBoardBot.PERIODIC_MENU_CHECK_TIME_INTERVAL)) {
                 continue;
             }
@@ -108,7 +125,7 @@ public class BiteBoardBot {
             }
 
             if (menuEmbed.getMenuItems().isEmpty()) {
-                channel.sendMessage(LanguageManager.get().fillTranslation("command.settingsmenu.response.periodicMenu.noMenuForToday", provider.toMdString(), queryTime.toString())).queue();
+                channel.sendMessage(LanguageManager.get().fillTranslation("command.settingsmenu.response.periodicMenu.noMenuForToday", provider.toMdString(), TimeUtils.formatDay(queryTime))).queue();
                 log.info("No periodic menu found for channel {} on {}", channel.getId(), queryTime.toString());
                 return;
             }

@@ -1,6 +1,7 @@
 {
   "command": {
     "generic": {
+      "invalidCommandName": "... du hast es geschafft, einen anderen Befehl zu senden als Discord erwartet hat. Wie hast du das gemacht?",
       "errorExecutingCommand": "Es gab ein Fehler beim Ausführen deines Befehls. Prüfe noch einmal deine Eingaben oder versuche es noch einmal."
     },
     "menu": {
