@@ -13,6 +13,8 @@ public class BiteBoardProperties {
 
     public static final String DATA_STORAGE_PATH = "dataStoragePath";
 
+    public static final String LANGUAGE = "language";
+
     public static final String MENSA_MENU_IMAGE_PREVIEW_SERVICE = "mensaMenuImagePreviewService";
     public static final String GOOGLE_IMAGE_API_KEY = "googleImageApiKey";
     public static final String GOOGLE_IMAGE_API_APPLICATION_ID = "googleImageApiApplicationId";

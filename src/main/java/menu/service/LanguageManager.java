@@ -99,11 +99,11 @@ public class LanguageManager {
         return key;
     }
 
-    public String fillTranslation(String key, String... args) {
+    public String fillTranslation(String key, Object... args) {
         String translation = getTranslation(key);
 
         for (int i = 0; i < args.length; i++) {
-            translation = translation.replace("{" + i + "}", args[i]);
+            translation = translation.replace("{" + i + "}", String.valueOf(args[i]));
         }
 
         return translation;

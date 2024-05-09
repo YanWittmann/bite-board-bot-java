@@ -86,11 +86,10 @@ public class BotData {
 
     private BotUserData findOrCreateUser(String userId) {
         return users.stream()
-                .filter(user -> user.getRoles().contains(userId))
+                .filter(user -> user.getUserId().equals(userId))
                 .findFirst()
                 .orElseGet(() -> {
-                    BotUserData newUser = new BotUserData();
-                    newUser.getRoles().add(userId);
+                    final BotUserData newUser = new BotUserData(userId);
                     users.add(newUser);
                     return newUser;
                 });
@@ -101,29 +100,35 @@ public class BotData {
     }
 
     public void setPeriodicMenuChannel(String channelId, String time, String provider, int addTime) {
-        BotSendPeriodicMenuInfo menuInfo = new BotSendPeriodicMenuInfo();
+        this.sendDailyMenuInfo.removeIf(info -> info.getChannelId().equals(channelId));
+
+        final BotSendPeriodicMenuInfo menuInfo = new BotSendPeriodicMenuInfo();
+        menuInfo.setChannelId(channelId);
         menuInfo.setTime(time);
         menuInfo.setProvider(provider);
         menuInfo.setAddTime(addTime);
         sendDailyMenuInfo.removeIf(info -> info.getProvider().equals(channelId));
         sendDailyMenuInfo.add(menuInfo);
+
         writeData();
     }
 
     @Data
     public static class BotUserData {
+        private final String userId;
         private final List<String> roles = new ArrayList<>();
         private String preferredMenuProvider = null;
 
         public JSONObject toJson() {
             final JSONObject json = new JSONObject();
+            json.put("userId", userId);
             json.put("roles", roles);
             json.put("preferredMenuProvider", preferredMenuProvider);
             return json;
         }
 
         public static BotUserData fromJson(JSONObject json) {
-            final BotUserData data = new BotUserData();
+            final BotUserData data = new BotUserData(json.getString("userId"));
             data.roles.addAll(json.getJSONArray("roles").toList().stream().map(Object::toString).collect(Collectors.toList()));
             data.preferredMenuProvider = json.getString("preferredMenuProvider");
             return data;
@@ -132,12 +137,14 @@ public class BotData {
 
     @Data
     public static class BotSendPeriodicMenuInfo {
+        private String channelId;
         private String time;
         private String provider;
         private int addTime;
 
         public JSONObject toJson() {
             final JSONObject json = new JSONObject();
+            json.put("channelId", channelId);
             json.put("time", time);
             json.put("provider", provider);
             json.put("addTime", addTime);
@@ -146,6 +153,7 @@ public class BotData {
 
         public static BotSendPeriodicMenuInfo fromJson(JSONObject json) {
             final BotSendPeriodicMenuInfo data = new BotSendPeriodicMenuInfo();
+            data.channelId = json.getString("channelId");
             data.time = json.getString("time");
             data.provider = json.getString("provider");
             data.addTime = json.getInt("addTime");

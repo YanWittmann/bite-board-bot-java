@@ -1,5 +1,6 @@
 package menu.providers;
 
+import lombok.Getter;
 import lombok.extern.log4j.Log4j2;
 
 import java.util.Collection;
@@ -7,6 +8,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 @Log4j2
+@Getter
 public class MenuItemsProviderManager {
     private final Map<String, MenuItemsProvider> providers = new HashMap<>();
 

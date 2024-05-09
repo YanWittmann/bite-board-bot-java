@@ -8,13 +8,16 @@ import menu.providers.*;
 import menu.service.ImageSearcher;
 import menu.service.ImageUtils;
 import menu.service.LanguageManager;
+import menu.service.TimeUtils;
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.entities.MessageEmbed;
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
 import net.dv8tion.jda.api.interactions.DiscordLocale;
+import net.dv8tion.jda.api.interactions.commands.OptionType;
 import net.dv8tion.jda.api.interactions.commands.build.CommandData;
+import net.dv8tion.jda.api.interactions.commands.build.OptionData;
 import net.dv8tion.jda.api.interactions.commands.build.SubcommandData;
 import net.dv8tion.jda.api.requests.restaction.WebhookMessageCreateAction;
 import net.dv8tion.jda.api.utils.FileUpload;
@@ -35,6 +38,8 @@ import java.util.stream.Collectors;
 @Log4j2
 public class MenuCommand extends ListenerAdapter {
 
+    private final static List<String> MENU_FETCH_SUBCOMMANDS = Arrays.asList("today", "tomorrow", "overmorrow", "monday", "tuesday", "wednesday", "thursday", "friday");
+
     private final MenuItemsProviderManager menuProviders;
     private final ImageSearcher.ImageSearch imageSearch;
     private final BotData botData;
@@ -46,17 +51,16 @@ public class MenuCommand extends ListenerAdapter {
     }
 
     public CommandData getCommandData() {
-        return new CommandDataImpl("menu", LanguageManager.get().getTranslation("command.menu.description"))
-                .addSubcommands(
-                        createFetchMenuForDaySubcommand("today"),
-                        createFetchMenuForDaySubcommand("tomorrow"),
-                        createFetchMenuForDaySubcommand("overmorrow"),
-                        createFetchMenuForDaySubcommand("monday"),
-                        createFetchMenuForDaySubcommand("tuesday"),
-                        createFetchMenuForDaySubcommand("wednesday"),
-                        createFetchMenuForDaySubcommand("thursday"),
-                        createFetchMenuForDaySubcommand("friday")
-                );
+        log.info("Creating command data for menu command");
+        final CommandDataImpl commandData = new CommandDataImpl("menu", LanguageManager.get().getTranslation("command.menu.description"));
+
+        for (String subcommand : MENU_FETCH_SUBCOMMANDS) {
+            commandData.addSubcommands(createFetchMenuForDaySubcommand(subcommand));
+        }
+
+        createSettingSubcommands().forEach(commandData::addSubcommands);
+
+        return commandData;
     }
 
     private SubcommandData createFetchMenuForDaySubcommand(String nameKey) {
@@ -64,11 +68,62 @@ public class MenuCommand extends ListenerAdapter {
                 nameKey,
                 LanguageManager.get().getTranslation("command.menu.options." + nameKey + ".description")
         );
-        for (Map.Entry<String, DiscordLocale> langToLocale : LanguageManager.get().getAvailableDiscordLocales().entrySet()) {
-            subcommand.setNameLocalization(langToLocale.getValue(), LanguageManager.get().getTranslation("command.menu.options." + nameKey + ".name", langToLocale.getKey()));
-            subcommand.setDescriptionLocalization(langToLocale.getValue(), LanguageManager.get().getTranslation("command.menu.options." + nameKey + ".description", langToLocale.getKey()));
-        }
+        populateSubcommandLocalization(subcommand, "command.menu.options." + nameKey + ".name", "command.menu.options." + nameKey + ".description");
         return subcommand;
+    }
+
+    private List<SubcommandData> createSettingSubcommands() {
+        final List<SubcommandData> subcommands = new ArrayList<>();
+        final List<String> availableMenuProviderNames = new ArrayList<>(menuProviders.getProviders().keySet());
+
+        final SubcommandData setMenuProviderSubcommand = new SubcommandData(
+                "provider",
+                LanguageManager.get().getTranslation("command.settingsmenu.options.setprovider.description")
+        );
+        populateSubcommandLocalization(setMenuProviderSubcommand, "command.settingsmenu.options.setprovider.name", "command.settingsmenu.options.setprovider.description");
+        final OptionData providerOption = new OptionData(OptionType.STRING, "provider", LanguageManager.get().getTranslation("command.settingsmenu.options.setprovider.description"), true);
+        availableMenuProviderNames.forEach(provider -> providerOption.addChoice(provider, provider));
+        setMenuProviderSubcommand.addOptions(providerOption);
+        subcommands.add(setMenuProviderSubcommand);
+
+        final SubcommandData listMenuProvidersSubcommand = new SubcommandData(
+                "listproviders",
+                LanguageManager.get().getTranslation("command.settingsmenu.options.listproviders.description")
+        );
+        populateSubcommandLocalization(listMenuProvidersSubcommand, "command.settingsmenu.options.listproviders.name", "command.settingsmenu.options.listproviders.description");
+        subcommands.add(listMenuProvidersSubcommand);
+
+        final SubcommandData setPeriodicMenuSubcommand = new SubcommandData(
+                "schedule",
+                LanguageManager.get().getTranslation("command.settingsmenu.options.periodicMenu.description")
+        );
+        populateSubcommandLocalization(setPeriodicMenuSubcommand, "command.settingsmenu.options.periodicMenu.name", "command.settingsmenu.options.periodicMenu.description");
+        final OptionData providerOptionForPeriodic = new OptionData(OptionType.STRING, "provider", LanguageManager.get().getTranslation("command.settingsmenu.options.periodicMenu.provider.description"), true);
+        availableMenuProviderNames.forEach(provider -> providerOptionForPeriodic.addChoice(provider, provider));
+        setPeriodicMenuSubcommand.addOptions(providerOptionForPeriodic);
+        setPeriodicMenuSubcommand.addOption(OptionType.STRING, "time", LanguageManager.get().getTranslation("command.settingsmenu.options.periodicMenu.time.description"), true);
+        setPeriodicMenuSubcommand.addOption(OptionType.INTEGER, "add", LanguageManager.get().getTranslation("command.settingsmenu.options.periodicMenu.addTime.description"), true);
+        subcommands.add(setPeriodicMenuSubcommand);
+
+        final SubcommandData setTimeSubcommand = new SubcommandData(
+                "time",
+                LanguageManager.get().getTranslation("command.settingsmenu.options.time.description")
+        );
+        populateSubcommandLocalization(setTimeSubcommand, null, "command.settingsmenu.options.time.description");
+        subcommands.add(setTimeSubcommand);
+
+        return subcommands;
+    }
+
+    private void populateSubcommandLocalization(SubcommandData setMenuProviderSubcommand, String nameKey, String descriptionKey) {
+        for (Map.Entry<String, DiscordLocale> langToLocale : LanguageManager.get().getAvailableDiscordLocales().entrySet()) {
+            if (nameKey != null) {
+                setMenuProviderSubcommand.setNameLocalization(langToLocale.getValue(), LanguageManager.get().getTranslation(nameKey, langToLocale.getKey()));
+            }
+            if (descriptionKey != null) {
+                setMenuProviderSubcommand.setDescriptionLocalization(langToLocale.getValue(), LanguageManager.get().getTranslation(descriptionKey, langToLocale.getKey()));
+            }
+        }
     }
 
     @Override
@@ -79,16 +134,120 @@ public class MenuCommand extends ListenerAdapter {
 
         final String user = event.getUser().getName();
         final String subcommandName = event.getSubcommandName();
+
+        if (subcommandName == null) {
+            event.getHook().sendMessage(LanguageManager.get().getTranslation("command.settingsmenu.response.unknownSubcommand.description")).queue();
+            return;
+        }
+
+        if (MENU_FETCH_SUBCOMMANDS.contains(subcommandName)) {
+            fetchMenuSubcommandExecution(event, user, subcommandName);
+        } else {
+            switch (subcommandName) {
+                case "provider":
+                    setMenuProviderSubcommandExecution(event, user);
+                    break;
+                case "listproviders":
+                    listMenuProvidersSubcommandExecution(event);
+                    break;
+                case "schedule":
+                    scheduleMenuSubcommandExecution(event, user);
+                    break;
+                case "time":
+                    echoUtcTimeSubcommandExecution(event);
+                    break;
+                default:
+                    event.getHook().sendMessage(LanguageManager.get().getTranslation("command.settingsmenu.response.unknownSubcommand.description")).queue();
+                    break;
+            }
+        }
+    }
+
+    private void setMenuProviderSubcommandExecution(SlashCommandInteractionEvent event, String user) {
+        final String provider = event.getOption("provider").getAsString();
+        final Set<String> providerNames = menuProviders.getProviders().keySet();
+
+        if (!providerNames.contains(provider)) {
+            event.getHook().sendMessage(LanguageManager.get().fillTranslation("command.settingsmenu.response.setprovider.providerNotAvailable", provider)).queue();
+            log.error("User {} tried to set provider to {}, but it is not available", user, provider);
+            return;
+        }
+
+        botData.setUserPreferredMenuProvider(user, provider);
+        event.getHook().sendMessage(LanguageManager.get().fillTranslation("command.settingsmenu.response.setprovider.success", provider)).queue();
+        log.info("User {} set provider to {}", user, provider);
+    }
+
+    private void listMenuProvidersSubcommandExecution(SlashCommandInteractionEvent event) {
+        if (menuProviders.getProviders().values().isEmpty()) {
+            event.getHook().sendMessage(LanguageManager.get().getTranslation("command.settingsmenu.response.listproviders.noProviders")).queue();
+        }
+
+        final StringBuilder providersList = new StringBuilder();
+        for (MenuItemsProvider provider : menuProviders.getProviders().values()) {
+            providersList.append("- ").append(provider.toMdString()).append("\n");
+        }
+        event.getHook().sendMessage(LanguageManager.get().getTranslation("command.settingsmenu.response.listproviders.success") + "\n" + providersList).queue();
+    }
+
+    private void scheduleMenuSubcommandExecution(SlashCommandInteractionEvent event, String user) {
+        if (!botData.isUserRole(user, "periodic")) {
+            event.getHook().sendMessage(LanguageManager.get().fillTranslation("command.settingsmenu.response.periodicMenu.noPermission")).queue();
+            log.error("User {} tried to set periodic menu, but has no permission", user);
+            return;
+        }
+
+        if (event.getOption("provider") == null) {
+            event.getHook().sendMessage("Missing option: provider").queue();
+            log.error("User {} tried to set periodic menu without provider", user);
+            return;
+        }
+        final String provider = event.getOption("provider").getAsString();
+        final MenuItemsProvider foundProvider = menuProviders.get(provider);
+
+        if (foundProvider == null) {
+            event.getHook().sendMessage(LanguageManager.get().fillTranslation("command.settingsmenu.response.periodicMenu.providerNotAvailable", provider)).queue();
+            log.error("User {} tried to set periodic menu with provider {}, but it is not available", user, provider);
+            return;
+        }
+
+        // Time Validation
+        final String time = event.getOption("time").getAsString();
+        final String[] timeParts = time.split(":");
+        final boolean isValidFormat = timeParts.length == 3
+                && Integer.parseInt(timeParts[0]) <= 23 && Integer.parseInt(timeParts[1]) <= 59 && Integer.parseInt(timeParts[2]) <= 59
+                && Integer.parseInt(timeParts[0]) >= 0 && Integer.parseInt(timeParts[1]) >= 0 && Integer.parseInt(timeParts[2]) >= 0;
+
+        if (!isValidFormat) {
+            event.getHook().sendMessage(LanguageManager.get().fillTranslation("command.settingsmenu.response.periodicMenu.invalidTime", time)).queue();
+            log.error("User {} tried to set periodic menu with invalid time {}", user, time);
+            return;
+        }
+
+        final long addTime = event.getOption("add").getAsLong();
+        final String channelId = event.getChannel().getId();
+
+        botData.setPeriodicMenuChannel(channelId, time, provider, (int) addTime);
+
+        event.getHook().sendMessage(LanguageManager.get().fillTranslation("command.settingsmenu.response.periodicMenu.success", time, foundProvider.toMdString(), addTime)).queue();
+        log.info("User {} set periodic menu for channel {} to {} with provider {}", user, channelId, time, provider);
+    }
+
+    private void echoUtcTimeSubcommandExecution(SlashCommandInteractionEvent event) {
+        event.getHook().sendMessage(LanguageManager.get().fillTranslation("command.settingsmenu.response.time.currentTime", TimeUtils.formatTime(TimeUtils.getUtcNow()))).queue();
+    }
+
+    private void fetchMenuSubcommandExecution(SlashCommandInteractionEvent event, String user, String subcommandName) {
         final MenuItemsProvider menuProvider = botData.findUserPreferredMenuProvider(user, menuProviders);
 
         if (menuProvider == null) {
-            event.getHook().sendMessage(LanguageManager.get().getTranslation("command.menu.response.noMenuProvider")).queue();
+            event.getHook().sendMessage(LanguageManager.get().getTranslation("command.menu.response.menu.noMenuProvider")).queue();
             return;
         }
 
         log.info("Fetching menu for user [{}] using provider [{}] with subcommand [{}]", user, menuProvider.getName(), subcommandName);
 
-        final MenuCommandData menuCommandData = parseCommand(event);
+        final MenuCommandData menuCommandData = parseFetchMenuCommand(event);
         final ConstructedMenuEmbed menuEmbedResult;
         try {
             menuEmbedResult = constructMenuEmbed(menuProvider, menuCommandData);
@@ -133,7 +292,7 @@ public class MenuCommand extends ListenerAdapter {
         final List<MenuItem> menuItems = menuProvider.getMenuItemsForDate(menuCommandData.getMenuTime()).get();
 
         final EmbedBuilder menuEmbed = new EmbedBuilder()
-                .setTitle(menuCommandData.getEmbedTitle() + " - " + menuCommandData.getTargetDate().toString())
+                .setTitle(menuCommandData.getEmbedTitle() + " - " + TimeUtils.formatDay(menuCommandData.getTargetDate()))
                 .setDescription(LanguageManager.get().getTranslation("command.menu.response.menu.description"))
                 .setColor(Color.decode("#0099ff"))
                 .setTimestamp(new Date().toInstant())
@@ -198,7 +357,7 @@ public class MenuCommand extends ListenerAdapter {
         return new ConstructedMenuEmbed(menuEmbed.build(), menuItems);
     }
 
-    public List<ConstructedMenuImageEmbed> constructImageEmbed(ImageSearcher.ImageSearch imageSearch, List<MenuItem> menuItems) {
+    public static List<ConstructedMenuImageEmbed> constructImageEmbed(ImageSearcher.ImageSearch imageSearch, List<MenuItem> menuItems) {
         final ImageSearcher.ImageDisplayMode preferredImageDisplayMode = imageSearch.preferredImageDisplayMode();
 
         final List<String> irrelevantImageItems = Arrays.asList("Salatbuffet", "Dessert");
@@ -274,7 +433,7 @@ public class MenuCommand extends ListenerAdapter {
         return Collections.emptyList();
     }
 
-    public static MenuCommandData parseCommand(SlashCommandInteractionEvent interaction) {
+    public static MenuCommandData parseFetchMenuCommand(SlashCommandInteractionEvent interaction) {
         LocalDate targetDate = LocalDate.now();
         final String subcommand = interaction.getSubcommandName();
 
