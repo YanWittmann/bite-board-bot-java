@@ -117,7 +117,7 @@ public class ImageSearcher {
                 log.error("No valid Google API image search configuration found, using dummy image search. Required fields: googleImageApiKey, googleImageApiApplicationId");
             }
         } else if (!menuImagePreviewService.equals("none")) {
-            log.error("No valid image search configuration found, using dummy image search");
+            throw new IllegalArgumentException("Invalid image search service specified: " + menuImagePreviewService);
         }
 
         return new DummyImageSearch();

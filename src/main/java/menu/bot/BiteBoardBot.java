@@ -37,7 +37,11 @@ public class BiteBoardBot {
         providers.forEach(menuProviders::register);
 
         this.imageSearch = ImageSearcher.createImageSearch(BiteBoardProperties.getProperties());
-        this.botData = new BotData(new File(BiteBoardProperties.getProperties().getProperty(BiteBoardProperties.DATA_STORAGE_PATH)));
+        try {
+            this.botData = new BotData(new File(BiteBoardProperties.getProperties().getProperty(BiteBoardProperties.DATA_STORAGE_PATH)));
+        } catch (Exception e) {
+            throw new RuntimeException("Error parsing bot data from file: " + e.getMessage());
+        }
         this.menuCommand = new MenuCommand(menuProviders, imageSearch, botData);
 
         this.jda = JDABuilder.createDefault(BiteBoardProperties.getProperties().getProperty(BiteBoardProperties.DISCORD_BOT_TOKEN))

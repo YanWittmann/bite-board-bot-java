@@ -29,14 +29,18 @@ public class LanguageManager {
     }
 
     private static final String LANG_DIR = "/bot/lang/";
+    private static final List<String> SUPPORTED_LANGUAGES = Arrays.asList("en", "de");
     private final Map<String, JSONObject> languages = new HashMap<>();
     private String currentLanguage = "en";
 
     public void setupLanguages() throws IOException {
-        final String[] files = getResourceListing(getClass(), LANG_DIR);
+        final List<String> files = new ArrayList<>(Arrays.asList(getResourceListing(getClass(), LANG_DIR)));
 
-        if (files.length == 0) {
-            throw new RuntimeException("No language files found in [" + LANG_DIR + "]");
+        for (String lang : SUPPORTED_LANGUAGES) {
+            String path = lang + ".json";
+            if (!files.contains(path)) {
+                files.add(path);
+            }
         }
 
         for (String file : files) {
@@ -45,6 +49,10 @@ public class LanguageManager {
                 JSONObject langData = parseJsonFile(LANG_DIR + file);
                 languages.put(lang, langData);
             }
+        }
+
+        if (languages.isEmpty()) {
+            throw new RuntimeException("No languages found in lang directory");
         }
     }
 
