@@ -15,11 +15,12 @@ specific canteen or other food location.
   * [Installation](#installation)
   * [Setup](#setup)
     * [Configuration](#configuration)
-      * [token / clientId](#token--clientid)
+      * [discordBotToken / discordClientId](#discordbottoken--discordclientid)
       * [dataStoragePath](#datastoragepath)
       * [mensaMenuImagePreviewService](#mensamenuimagepreviewservice)
       * [googleImageApiKey / googleImageApiApplicationId](#googleimageapikey--googleimageapiapplicationid)
       * [language](#language)
+      * [menuVotingOnUserRequest / menuVotingOnScheduledRequest](#menuvotingonuserrequest--menuvotingonscheduledrequest)
     * [Inviting the bot to your server](#inviting-the-bot-to-your-server)
   * [Usage](#usage)
     * [Commands: Fetching the menu](#commands-fetching-the-menu)
@@ -56,7 +57,7 @@ If you need to change the path to the configuration file to somewhere outside th
 
 Make sure to rerun `mvn clean package` after changing the configuration file.
 
-#### token / clientId
+#### discordBotToken / discordClientId
 
 The token is the bot token you get from the [Discord Developer Portal](https://discord.com/developers/applications).
 For this, you will need to create a new application and a bot user for it.
@@ -103,6 +104,14 @@ If you need to add your own language, you can do so by adding a new JSON file to
 [lang](src/main/resources/bot/lang)
 directory and putting its name in the [LanguageManager.java](src/main/java/menu/service/LanguageManager.java) file at
 the top into the list.
+
+#### menuVotingOnUserRequest / menuVotingOnScheduledRequest
+
+Can each either be set to `true` or `false`.
+If `true`, the bot will add reactions (that depend on the menu provider) to the menu embeds that allow users to vote on
+the menu.
+
+![Menu Voting via Reactions](img/discord-bot-menu-voting.png)
 
 ### Inviting the bot to your server
 

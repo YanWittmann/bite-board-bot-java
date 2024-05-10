@@ -2,6 +2,7 @@ package menu.bot.commands;
 
 import lombok.Data;
 import lombok.extern.log4j.Log4j2;
+import menu.bot.BiteBoardProperties;
 import menu.bot.BotData;
 import menu.providers.MenuItem;
 import menu.providers.*;
@@ -9,6 +10,7 @@ import menu.service.*;
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.entities.MessageEmbed;
+import net.dv8tion.jda.api.entities.emoji.Emoji;
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
 import net.dv8tion.jda.api.interactions.DiscordLocale;
@@ -272,7 +274,10 @@ public class MenuCommand extends ListenerAdapter {
             return;
         }
 
-        event.getHook().sendMessageEmbeds(menuEmbedResult.getMenuEmbed()).queue();
+        final WebhookMessageCreateAction<Message> messageAction = event.getHook().sendMessageEmbeds(menuEmbedResult.getMenuEmbed());
+        messageAction.queue();
+        final Message message = messageAction.complete();
+        attachReactions(menuProvider, menuEmbedResult.getMenuItems(), message, BiteBoardProperties.MENU_VOTING_ON_USER_REQUEST);
 
         final List<ConstructedMenuImageEmbed> imageEmbeds = constructImageEmbed(imageSearch, menuEmbedResult.getMenuItems());
         for (ConstructedMenuImageEmbed imageEmbed : imageEmbeds) {
@@ -281,6 +286,18 @@ public class MenuCommand extends ListenerAdapter {
                 action.addFiles(FileUpload.fromData(imageEmbed.getImageFile()));
             }
             action.queue();
+        }
+    }
+
+    public void attachReactions(MenuItemsProvider provider, List<MenuItem> menuItems, Message message, String propertyKey) {
+        if ("true".equals(BiteBoardProperties.getProperties().getProperty(propertyKey))) {
+            final List<String> menuEmojis = provider.getMenuEmojis(menuItems);
+            for (int i = 0; i < menuItems.size(); i++) {
+                if (i >= menuEmojis.size()) {
+                    break;
+                }
+                message.addReaction(Emoji.fromUnicode(menuEmojis.get(i))).queue();
+            }
         }
     }
 

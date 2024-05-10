@@ -12,6 +12,7 @@ import menu.service.LanguageManager;
 import menu.service.TimeUtils;
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.JDABuilder;
+import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.entities.channel.concrete.TextChannel;
 import net.dv8tion.jda.api.requests.restaction.MessageCreateAction;
 import net.dv8tion.jda.api.utils.ChunkingFilter;
@@ -131,6 +132,10 @@ public class BiteBoardBot {
             }
 
             channel.sendMessageEmbeds(menuEmbed.getMenuEmbed()).queue();
+            final MessageCreateAction messageAction = channel.sendMessageEmbeds(menuEmbed.getMenuEmbed());
+            messageAction.queue();
+            final Message message = messageAction.complete();
+            menuCommand.attachReactions(provider, menuEmbed.getMenuItems(), message, BiteBoardProperties.MENU_VOTING_ON_SCHEDULED_REQUEST);
 
             final List<MenuItem> menuItems = menuEmbed.getMenuItems();
 

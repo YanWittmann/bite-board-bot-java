@@ -64,6 +64,11 @@ public class HochschuleMannheimTagessichtMenuProvider extends MenuItemsProvider 
         });
     }
 
+    @Override
+    public List<String> getMenuEmojis(List<MenuItem> menuItems) {
+        return Arrays.asList("\u0031\u20E3", "\u0032\u20E3", "\u0033\u20E3");
+    }
+
     private List<MenuItem> parseMenuItems(Document document, MenuTime queryDate) {
         final String title = document.selectFirst("title").text();
         log.info(title);

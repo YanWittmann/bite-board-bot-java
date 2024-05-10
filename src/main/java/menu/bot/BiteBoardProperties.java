@@ -24,6 +24,9 @@ public class BiteBoardProperties {
     public static final String DISCORD_CLIENT_ID = "discordClientId";
     public static final String DISCORD_BOT_TOKEN = "discordBotToken";
 
+    public static final String MENU_VOTING_ON_USER_REQUEST = "menuVotingOnUserRequest";
+    public static final String MENU_VOTING_ON_SCHEDULED_REQUEST = "menuVotingOnScheduledRequest";
+
     public static Properties getProperties() {
         if (properties == null) {
             try {
