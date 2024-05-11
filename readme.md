@@ -28,6 +28,7 @@ specific canteen or other food location.
     * [Commands: Scheduled Fetching](#commands-scheduled-fetching)
   * [Creating a Menu Provider](#creating-a-menu-provider)
   * [Raspberry Pi setup](#raspberry-pi-setup)
+  * [License](#license)
 <!-- TOC -->
 
 ## Installation
@@ -234,3 +235,7 @@ screen -r bite-board-bot
 ```
 
 [To detach a screen session](https://askubuntu.com/a/124903): Ctrl+a followed by d. Note the lower case.
+
+## License
+
+This project is licensed under the Apache License, Version 2.0. See the [LICENSE](LICENSE) file for details.
