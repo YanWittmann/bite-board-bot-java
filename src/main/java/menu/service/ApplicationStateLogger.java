@@ -10,13 +10,20 @@ import java.util.List;
 public class ApplicationStateLogger {
 
     public static void logApplicationSplashScreen() {
+        final String projectPomVersion = BuildProperties.getProperties().getProperty(BuildProperties.PROJECT_VERSION);
+        String projectHashVersion;
+        try {
+            projectHashVersion = JarHasher.getJarHash().substring(0, 16);
+        } catch (Exception e) {
+            projectHashVersion = "unknown hash, not started from jar file";
+        }
         log.info("  ____   _  _            ____                           _    ____          _");
         log.info(" | __ ) (_)| |_   ___   | __ )   ___    __ _  _ __   __| |  | __ )   ___  | |_");
         log.info(" |  _ \\ | || __| / _ \\==|  _ \\  / _ \\  / _` || '__| / _` |==|  _ \\  / _ \\ | __|");
         log.info(" | |_) || || |_ |  __/==| |_) || (_) || (_| || |   | (_| |==| |_) || (_) || |_");
         log.info(" |____/ |_| \\__| \\___|  |____/  \\___/  \\__,_||_|    \\__,_|  |____/  \\___/  \\__|");
         log.info("");
-        log.info("   Version: {}", BuildProperties.getProperties().getProperty(BuildProperties.PROJECT_VERSION));
+        log.info("   Version: {} ~ {}", projectPomVersion, projectHashVersion);
         log.info("");
     }
 

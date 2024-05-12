@@ -116,7 +116,7 @@ public class BiteBoardBot {
 
             final MenuTime menuTime = new MenuTime(calendar.get(Calendar.YEAR), calendar.get(Calendar.MONTH) + 1, calendar.get(Calendar.DATE));
 
-            log.info("Posting menu for channel {} with provider {}", channelId, provider.getName());
+            log.info("Posting menu for channel [{}] with provider [{}] for [{}]", channelId, provider.getName(), queryTime.toString());
             final MenuCommand.ConstructedMenuEmbed menuEmbed = menuCommand.constructMenuEmbed(provider, new MenuCommand.MenuCommandData("Menu", queryTime, menuTime));
 
             final TextChannel channel = jda.getTextChannelById(channelId);
@@ -127,12 +127,12 @@ public class BiteBoardBot {
 
             if (menuEmbed.getMenuItems().isEmpty()) {
                 channel.sendMessage(LanguageManager.get().fillTranslation("command.settingsmenu.response.periodicMenu.noMenuForToday", provider.toMdString(), TimeUtils.formatDay(queryTime))).queue();
-                log.info("No periodic menu found for channel {} on {}", channel.getId(), queryTime.toString());
+                log.info("No periodic menu found for channel [{}] with provider [{}] for [{}]", channelId, provider.getName(), queryTime.toString());
                 return;
             }
 
+            log.info("Posting periodic menu for channel [{}] with provider [{}] for [{}]", channelId, provider.getName(), queryTime.toString());
             final MessageCreateAction messageAction = channel.sendMessageEmbeds(menuEmbed.getMenuEmbed());
-            messageAction.queue();
             final Message message = messageAction.complete();
             menuCommand.attachReactions(provider, menuEmbed.getMenuItems(), message, BiteBoardProperties.MENU_VOTING_ON_SCHEDULED_REQUEST);
 
@@ -140,8 +140,9 @@ public class BiteBoardBot {
 
             final List<MenuCommand.ConstructedMenuImageEmbed> imageEmbeds = MenuCommand.constructImageEmbed(this.imageSearch, menuItems);
             if (!imageEmbeds.isEmpty()) {
+                log.info("Posting [{}] image embeds for channel [{}] on [{}]", imageEmbeds.size(), channel.getId(), queryTime.toString());
                 for (MenuCommand.ConstructedMenuImageEmbed imageEmbed : imageEmbeds) {
-                    MessageCreateAction action = channel.sendMessageEmbeds(imageEmbed.getImageEmbed());
+                    final MessageCreateAction action = channel.sendMessageEmbeds(imageEmbed.getImageEmbed());
                     if (imageEmbed.getImageFile() != null) {
                         action.addFiles(FileUpload.fromData(imageEmbed.getImageFile()));
                     }

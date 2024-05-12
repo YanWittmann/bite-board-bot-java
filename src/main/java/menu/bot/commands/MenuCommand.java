@@ -275,7 +275,6 @@ public class MenuCommand extends ListenerAdapter {
         }
 
         final WebhookMessageCreateAction<Message> messageAction = event.getHook().sendMessageEmbeds(menuEmbedResult.getMenuEmbed());
-        messageAction.queue();
         final Message message = messageAction.complete();
         attachReactions(menuProvider, menuEmbedResult.getMenuItems(), message, BiteBoardProperties.MENU_VOTING_ON_USER_REQUEST);
 
@@ -292,12 +291,18 @@ public class MenuCommand extends ListenerAdapter {
     public void attachReactions(MenuItemsProvider provider, List<MenuItem> menuItems, Message message, String propertyKey) {
         if ("true".equals(BiteBoardProperties.getProperties().getProperty(propertyKey))) {
             final List<String> menuEmojis = provider.getMenuEmojis(menuItems);
+            int attachmentCount = 0;
             for (int i = 0; i < menuItems.size(); i++) {
                 if (i >= menuEmojis.size()) {
                     break;
                 }
+                attachmentCount++;
                 message.addReaction(Emoji.fromUnicode(menuEmojis.get(i))).queue();
             }
+
+            log.info("Attached [{}] reactions to message [{}]", attachmentCount, message.getId());
+        } else {
+            log.info("Skipping reaction attachment for message [{}] due to property [{}]", message.getId(), propertyKey);
         }
     }
 
