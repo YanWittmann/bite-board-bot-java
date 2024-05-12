@@ -111,13 +111,13 @@ public class BiteBoardBot {
             final Calendar calendar = Calendar.getInstance();
             calendar.setTime(TimeUtils.getUtcNow());
             calendar.add(Calendar.MINUTE, addTime);
-            Date queryTime = calendar.getTime();
+            final Date queryTime = calendar.getTime();
             log.info("Query time {} = {} + {} minutes", queryTime.toInstant(), new Date().toInstant(), addTime);
 
             final MenuTime menuTime = new MenuTime(calendar.get(Calendar.YEAR), calendar.get(Calendar.MONTH) + 1, calendar.get(Calendar.DATE));
 
             log.info("Posting menu for channel {} with provider {}", channelId, provider.getName());
-            MenuCommand.ConstructedMenuEmbed menuEmbed = menuCommand.constructMenuEmbed(provider, new MenuCommand.MenuCommandData("Menu", queryTime, menuTime));
+            final MenuCommand.ConstructedMenuEmbed menuEmbed = menuCommand.constructMenuEmbed(provider, new MenuCommand.MenuCommandData("Menu", queryTime, menuTime));
 
             final TextChannel channel = jda.getTextChannelById(channelId);
             if (channel == null) {
@@ -131,7 +131,6 @@ public class BiteBoardBot {
                 return;
             }
 
-            channel.sendMessageEmbeds(menuEmbed.getMenuEmbed()).queue();
             final MessageCreateAction messageAction = channel.sendMessageEmbeds(menuEmbed.getMenuEmbed());
             messageAction.queue();
             final Message message = messageAction.complete();
