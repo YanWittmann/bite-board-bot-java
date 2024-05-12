@@ -6,7 +6,7 @@
 > installation issues on Raspberry Pi devices.
 
 A Discord bot that allows for creating custom Menu Providers that can then fetch the menu for a specific day from a
-specific canteen or other food location.
+specific canteen or other food location and show a preview using Google Images.
 
 <img alt="Example Menu output" height="380" src="img/discord-bot-example-output-1.png"/>
 
@@ -219,15 +219,15 @@ sudo apt install default-jdk
 java -version
 ```
 
-Copy via ssh the jar file to the Raspberry Pi after building it:
+Copy via ssh the jar file to the Raspberry Pi after building it (replace your user and paths):
 
 ```shell
-C:\Users\user>scp "I:\projects\bite-board-bot-java\target\bite-board-bot.jar" user@192.168.1.114:/home/user/workspace/bite-board-bot/
+scp bite-board-bot.jar user@192.168.1.114:/home/user/workspace/bite-board-bot
 user@192.168.1.114's password:
 bite-board-bot.jar                                                                    100%   66KB   1.7MB/s   00:00
 ```
 
-Start the bot with to be able to access it later again:
+Start the bot with [screen](https://www.gnu.org/software/screen) to be able to access it later again:
 
 ```shell
 screen -S bite-board-bot -d -m java -jar bite-board-bot.jar
