@@ -6,6 +6,7 @@ import lombok.extern.log4j.Log4j2;
 import menu.providers.MenuItemsProvider;
 import menu.providers.MenuItemsProviderManager;
 import org.apache.commons.io.FileUtils;
+import org.json.JSONArray;
 import org.json.JSONObject;
 
 import java.io.File;
@@ -13,6 +14,7 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 @Log4j2
@@ -22,6 +24,8 @@ public class BotData {
 
     private final List<BotUserData> users = new ArrayList<>();
     private final List<BotSendPeriodicMenuInfo> sendDailyMenuInfo = new ArrayList<>();
+
+    private final List<Consumer<List<BotSendPeriodicMenuInfo>>> periodicMenuChangeListener = new ArrayList<>();
 
     public BotData(File file) {
         if (file == null) {
@@ -113,6 +117,14 @@ public class BotData {
         sendDailyMenuInfo.add(menuInfo);
 
         writeData();
+
+        for (Consumer<List<BotSendPeriodicMenuInfo>> listener : periodicMenuChangeListener) {
+            listener.accept(sendDailyMenuInfo);
+        }
+    }
+
+    public void addPeriodicMenuChangeListener(Consumer<List<BotSendPeriodicMenuInfo>> updateCallback) {
+        periodicMenuChangeListener.add(updateCallback);
     }
 
     @Data
@@ -131,8 +143,11 @@ public class BotData {
 
         public static BotUserData fromJson(JSONObject json) {
             final BotUserData data = new BotUserData(json.getString("userId"));
-            data.roles.addAll(json.getJSONArray("roles").toList().stream().map(Object::toString).collect(Collectors.toList()));
-            data.preferredMenuProvider = json.getString("preferredMenuProvider");
+            final JSONArray rolesArray = json.optJSONArray("roles");
+            if (rolesArray != null) {
+                rolesArray.toList().stream().map(Object::toString).forEach(data.roles::add);
+            }
+            data.preferredMenuProvider = json.optString("preferredMenuProvider", null);
             return data;
         }
     }

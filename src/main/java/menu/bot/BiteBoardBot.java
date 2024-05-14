@@ -2,25 +2,17 @@ package menu.bot;
 
 import lombok.extern.log4j.Log4j2;
 import menu.bot.commands.MenuCommand;
-import menu.providers.MenuItem;
 import menu.providers.MenuItemsProvider;
 import menu.providers.MenuItemsProviderManager;
-import menu.providers.MenuTime;
 import menu.service.ApplicationStateLogger;
 import menu.service.ImageSearcher;
 import menu.service.LanguageManager;
-import menu.service.TimeUtils;
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.JDABuilder;
-import net.dv8tion.jda.api.entities.Message;
-import net.dv8tion.jda.api.entities.channel.concrete.TextChannel;
-import net.dv8tion.jda.api.requests.restaction.MessageCreateAction;
 import net.dv8tion.jda.api.utils.ChunkingFilter;
-import net.dv8tion.jda.api.utils.FileUpload;
 
 import java.io.File;
-import java.util.*;
-import java.util.concurrent.ExecutionException;
+import java.util.List;
 
 @Log4j2
 public class BiteBoardBot {
@@ -32,6 +24,7 @@ public class BiteBoardBot {
     private final BotData botData;
     private final MenuCommand menuCommand;
     private final JDA jda;
+    private final ScheduledQueryExecutor scheduledQueryExecutor;
 
     public BiteBoardBot(List<MenuItemsProvider> providers) throws InterruptedException {
         ApplicationStateLogger.logStartupStart();
@@ -51,6 +44,7 @@ public class BiteBoardBot {
         ApplicationStateLogger.logStartupSetupBotData(BiteBoardProperties.getProperties().getProperty(BiteBoardProperties.DATA_STORAGE_PATH));
         try {
             this.botData = new BotData(new File(BiteBoardProperties.getProperties().getProperty(BiteBoardProperties.DATA_STORAGE_PATH)));
+            this.botData.addPeriodicMenuChangeListener(this::updateScheduledTasks);
             ApplicationStateLogger.logStartupSetupBotDataFinished(this.botData);
         } catch (Exception e) {
             throw new RuntimeException("Error parsing bot data from file: " + e.getMessage());
@@ -68,100 +62,24 @@ public class BiteBoardBot {
                 .updateCommands().addCommands(menuCommand.getCommandData())
                 .queue();
 
-        ApplicationStateLogger.logStartupSetupScheduleRegularMenuPosting();
-        final Timer timer = new Timer();
-        timer.schedule(new TimerTask() {
-            @Override
-            public void run() {
-                try {
-                    checkForPeriodicMenuPosting();
-                } catch (ExecutionException | InterruptedException e) {
-                    log.error("Error checking for periodic menu posting: {}", e.getMessage());
-                }
-            }
-        }, 0, PERIODIC_MENU_CHECK_TIME_INTERVAL);
+        this.scheduledQueryExecutor = new ScheduledQueryExecutor(jda, menuCommand, imageSearch, menuProviders);
+        scheduledQueryExecutor.scheduleAll(this.botData.getAllPeriodicMenuChannels());
+
+        Runtime.getRuntime().addShutdownHook(new Thread(this::shutdown));
 
         ApplicationStateLogger.logStartupPhaseComplete();
     }
 
-    private void checkForPeriodicMenuPosting() throws ExecutionException, InterruptedException {
-        final List<BotData.BotSendPeriodicMenuInfo> channelsData = this.botData.getAllPeriodicMenuChannels();
-
-        for (BotData.BotSendPeriodicMenuInfo channelData : channelsData) {
-            final String channelId = channelData.getChannelId();
-            final String time = channelData.getTime();
-
-            // check if the scheduled time has passed within the check interval
-            if (!checkUTCTime(time, BiteBoardBot.PERIODIC_MENU_CHECK_TIME_INTERVAL)) {
-                continue;
-            }
-
-            if (channelId == null) {
-                log.error("Channel ID is null for periodic menu posting");
-                return;
-            }
-
-            final MenuItemsProvider provider = this.menuProviders.get(channelData.getProvider());
-            if (provider == null) {
-                log.error("Provider for channel {} is not available: {}", channelId, channelData.getProvider());
-                continue;
-            }
-
-            final int addTime = channelData.getAddTime();
-            final Calendar calendar = Calendar.getInstance();
-            calendar.setTime(TimeUtils.getUtcNow());
-            calendar.add(Calendar.MINUTE, addTime);
-            final Date queryTime = calendar.getTime();
-            log.info("Query time {} = {} + {} minutes", queryTime.toInstant(), new Date().toInstant(), addTime);
-
-            final MenuTime menuTime = new MenuTime(calendar.get(Calendar.YEAR), calendar.get(Calendar.MONTH) + 1, calendar.get(Calendar.DATE));
-
-            log.info("Posting menu for channel [{}] with provider [{}] for [{}]", channelId, provider.getName(), queryTime.toString());
-            final MenuCommand.ConstructedMenuEmbed menuEmbed = menuCommand.constructMenuEmbed(provider, new MenuCommand.MenuCommandData("Menu", queryTime, menuTime));
-
-            final TextChannel channel = jda.getTextChannelById(channelId);
-            if (channel == null) {
-                log.error("Channel {} not found to post the periodic menu into", channelId);
-                return;
-            }
-
-            if (menuEmbed.getMenuItems().isEmpty()) {
-                channel.sendMessage(LanguageManager.get().fillTranslation("command.settingsmenu.response.periodicMenu.noMenuForToday", provider.toMdString(), TimeUtils.formatDay(queryTime))).queue();
-                log.info("No periodic menu found for channel [{}] with provider [{}] for [{}]", channelId, provider.getName(), queryTime.toString());
-                return;
-            }
-
-            log.info("Posting periodic menu for channel [{}] with provider [{}] for [{}]", channelId, provider.getName(), queryTime.toString());
-            final MessageCreateAction messageAction = channel.sendMessageEmbeds(menuEmbed.getMenuEmbed());
-            final Message message = messageAction.complete();
-            menuCommand.attachReactions(provider, menuEmbed.getMenuItems(), message, BiteBoardProperties.MENU_VOTING_ON_SCHEDULED_REQUEST);
-
-            final List<MenuItem> menuItems = menuEmbed.getMenuItems();
-
-            final List<MenuCommand.ConstructedMenuImageEmbed> imageEmbeds = MenuCommand.constructImageEmbed(this.imageSearch, menuItems);
-            if (!imageEmbeds.isEmpty()) {
-                log.info("Posting [{}] image embeds for channel [{}] on [{}]", imageEmbeds.size(), channel.getId(), queryTime.toString());
-                for (MenuCommand.ConstructedMenuImageEmbed imageEmbed : imageEmbeds) {
-                    final MessageCreateAction action = channel.sendMessageEmbeds(imageEmbed.getImageEmbed());
-                    if (imageEmbed.getImageFile() != null) {
-                        action.addFiles(FileUpload.fromData(imageEmbed.getImageFile()));
-                    }
-                    action.queue();
-                }
-            }
-        }
+    private void updateScheduledTasks(List<BotData.BotSendPeriodicMenuInfo> channelsData) {
+        scheduledQueryExecutor.scheduleAll(channelsData);
     }
 
-    private boolean checkUTCTime(String time, long periodicMenuCheckTimeInterval) {
-        String[] parts = time.split(":");
-        int hours = Integer.parseInt(parts[0]);
-        int minutes = Integer.parseInt(parts[1]);
-        int seconds = Integer.parseInt(parts[2]);
-
-        Date nowUTC = TimeUtils.getUtcNow();
-        Date timeUTC = TimeUtils.createUtcTime(hours, minutes, seconds);
-
-        long diff = nowUTC.getTime() - timeUTC.getTime();
-        return diff >= 0 && diff < periodicMenuCheckTimeInterval;
+    /**
+     * Gracefully shutdown the bot and the ScheduledQueryExecutor.
+     */
+    public void shutdown() {
+        scheduledQueryExecutor.shutdown();
+        jda.shutdown();
+        log.info("BiteBoardBot shutdown completed.");
     }
 }

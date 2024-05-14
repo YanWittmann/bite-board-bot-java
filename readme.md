@@ -224,7 +224,7 @@ Copy via ssh the jar file to the Raspberry Pi after building it (replace your us
 ```shell
 scp bite-board-bot.jar user@192.168.1.114:/home/user/workspace/bite-board-bot
 user@192.168.1.114's password:
-bite-board-bot.jar                                                                    100%   66KB   1.7MB/s   00:00
+bite-board-bot.jar                              100%   66KB   1.7MB/s   00:00
 ```
 
 Start the bot with [screen](https://www.gnu.org/software/screen) to be able to access it later again:

@@ -65,7 +65,7 @@ public class ApplicationStateLogger {
     }
 
     public static void logStartupSetupScheduleRegularMenuPosting() {
-        logApplicationStartupStepMessage("Scheduling regular menu posting timer");
+        logApplicationStartupStepMessage("Scheduling regular menu fetching");
     }
 
     public static void logStartupPhaseComplete() {
