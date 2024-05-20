@@ -17,8 +17,6 @@ import java.util.List;
 @Log4j2
 public class BiteBoardBot {
 
-    private static final long PERIODIC_MENU_CHECK_TIME_INTERVAL = 1000 * 10;
-
     private final ImageSearcher.ImageSearch imageSearch;
     private final MenuItemsProviderManager menuProviders = new MenuItemsProviderManager();
     private final BotData botData;
