@@ -2,6 +2,7 @@ package menu.bot;
 
 import lombok.extern.log4j.Log4j2;
 import menu.providers.implementations.HochschuleMannheimTagessichtMenuProvider;
+import menu.providers.implementations.LegacyHochschuleMannheimTagessichtMenuProvider;
 import menu.service.ApplicationStateLogger;
 
 import java.util.Arrays;
@@ -12,6 +13,7 @@ public class BiteBoardBotEntrypoint {
         ApplicationStateLogger.logApplicationSplashScreen();
 
         new BiteBoardBot(Arrays.asList(
+                // new LegacyHochschuleMannheimTagessichtMenuProvider(),
                 new HochschuleMannheimTagessichtMenuProvider()
         ));
     }

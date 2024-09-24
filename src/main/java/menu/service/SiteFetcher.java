@@ -11,6 +11,7 @@ import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.util.function.Function;
 
 @Log4j2
 public class SiteFetcher {
@@ -34,7 +35,7 @@ public class SiteFetcher {
         }
     }
 
-    public static Document performPostAndParseHtml(String url, RequestBody requestBody, Headers headers) throws IOException {
+    public static Document performPostAndParseHtml(String url, RequestBody requestBody, Headers headers, Function<String, String> responseTransformer) throws IOException {
         try {
             final Headers.Builder headersBuilder = new Headers.Builder()
                     .add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:124.0) Gecko/20100101 Firefox/124.0");
@@ -55,7 +56,8 @@ public class SiteFetcher {
             try (Response response = client.newCall(request).execute()) {
                 html = response.body().string();
             }
-            return Jsoup.parse(html);
+            final String transformed = responseTransformer.apply(html);
+            return Jsoup.parse(transformed);
         } catch (IOException e) {
             throw new IOException("[POST/Document] Could not load or parse the URL: " + url, e);
         }

@@ -5,7 +5,6 @@ import menu.providers.*;
 import menu.service.SiteFetcher;
 import okhttp3.FormBody;
 import okhttp3.Headers;
-import org.json.JSONObject;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.nodes.Node;
@@ -20,16 +19,16 @@ import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
 @Log4j2
-public class HochschuleMannheimTagessichtMenuProvider extends MenuItemsProvider {
+public class LegacyHochschuleMannheimTagessichtMenuProvider extends MenuItemsProvider {
 
     @Override
     public String getName() {
-        return "Hochschule Mannheim";
+        return "Hochschule Mannheim (legacy)";
     }
 
     @Override
     public String getDisplayMenuLink() {
-        return "https://www.stw-ma.de/essen-trinken/speiseplaene/mensa-an-der-hs/";
+        return "https://www.stw-ma.de/Essen+_+Trinken/Speisepl%C3%A4ne/Hochschule+Mannheim.html";
     }
 
     @Override
@@ -42,12 +41,8 @@ public class HochschuleMannheimTagessichtMenuProvider extends MenuItemsProvider 
         log.info("Loading menu for date: {}", date);
         return CompletableFuture.supplyAsync(() -> {
             try {
-                // location=611&lang=de&date=2024-09-25&mode=day
                 final FormBody formBody = new FormBody.Builder()
                         .add("day", date.getYear() + "-" + String.format("%02d", date.getMonth()) + "-" + String.format("%02d", date.getDay()))
-                        .add("location", "611")
-                        .add("lang", "de")
-                        .add("mode", "day")
                         .build();
 
                 final Headers headers = new Headers.Builder()
@@ -57,7 +52,7 @@ public class HochschuleMannheimTagessichtMenuProvider extends MenuItemsProvider 
                         .add("Upgrade-Insecure-Requests", "1")
                         .build();
 
-                final Document document = SiteFetcher.performPostAndParseHtml("https://api.stw-ma.de/tl1/menuplan", formBody, headers, response -> new JSONObject(response).getString("content"));
+                final Document document = SiteFetcher.performPostAndParseHtml("https://www.stw-ma.de/Essen+_+Trinken/Speisepl%C3%A4ne/Hochschule+Mannheim.html", formBody, headers, response -> response);
                 final List<MenuItem> items = parseMenuItems(document, date);
                 return items.stream()
                         .filter(item -> date.matches(item.getMenuTime()))
@@ -75,6 +70,9 @@ public class HochschuleMannheimTagessichtMenuProvider extends MenuItemsProvider 
     }
 
     private List<MenuItem> parseMenuItems(Document document, MenuTime queryDate) {
+        final String title = document.selectFirst("title").text();
+        log.info(title);
+
         final List<MenuItemFeature> menuItemFeatures = parseMenuItemFeatures(document);
         final List<MenuItem> menuItems = new ArrayList<>();
 
