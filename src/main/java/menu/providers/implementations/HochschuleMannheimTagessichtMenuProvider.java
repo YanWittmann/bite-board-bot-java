@@ -44,7 +44,7 @@ public class HochschuleMannheimTagessichtMenuProvider extends MenuItemsProvider 
             try {
                 // location=611&lang=de&date=2024-09-25&mode=day
                 final FormBody formBody = new FormBody.Builder()
-                        .add("day", date.getYear() + "-" + String.format("%02d", date.getMonth()) + "-" + String.format("%02d", date.getDay()))
+                        .add("date", date.getYear() + "-" + String.format("%02d", date.getMonth()) + "-" + String.format("%02d", date.getDay()))
                         .add("location", "611")
                         .add("lang", "de")
                         .add("mode", "day")
